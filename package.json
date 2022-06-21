@@ -1,0 +1,22 @@
+{
+  "name": "gothic",
+  "version": "0.0.1",
+  "description": "Google Authentication & Authorization Simplifier",
+  "keywords": [
+    "google-oauth"
+  ],
+  "license": "MIT",
+  "main": "./gothic.js",
+  "dependencies": {
+    "jwt-decode": "^3.1.2"    
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fb55/boolbase"
+  },
+  "author": "bluejack <bluejack@bluejack.com>",
+  "bugs": {
+    "url": "https://github.com/overclocked/gothic/issues"
+  },
+  "homepage": "https://github.com/overclocked/gothic"
+}
