@@ -6,9 +6,9 @@
 
 When Google announced the planned migration to it's new Identity Service for
 api authorization and user authentication functionality, I had a devil of a
-time figuring out how to make it work. The documentation had a lot of promises
-for a streamlines user experience and a simplified developer experience, and 
-I could not for the life of me figure out how to experience either of these
+time figuring out how to make it work. The documentation promised
+a streamlined user experience and a simplified developer process. But for the 
+life of me, I could not figure out how to achieve either of these
 blissful results.
 
 As a result, through extremely close attention to some of the more cryptic

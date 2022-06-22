@@ -115,7 +115,6 @@ function onetap() {
     google.accounts.id.initialize({
       client_id:   state.cid,
       auto_select: true,
-      scope:       state.scope,
       callback:    _on_response
     });
     google.accounts.id.prompt(_handle_prompt_events); // also display the One Tap dialog */
