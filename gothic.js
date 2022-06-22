@@ -29,16 +29,30 @@ export default {
   user       // return the user details.
 };
 
-let google;
-let gapi;
+/**
+ * Structures used by the module.
+ */
+let google;  // Google's GIS libraries
+let gapi;    // Google's API libraries
 
+/**
+ * Maintain state for the app.
+ */
 const state = {
-  prev:   false,
-  loaded: false,
-  cid:    null, 
-  user:   null
+  prev:      false,
+  loaded:    false,
+  cid:       null,
+  key:       null,
+  scope:     null,
+  discovery: null,
+  user:      null
 };
-const obs = [];
+
+const obs = []; // Observers, listening for actionable events.
+
+/* ------------------------------------------------------------------------- *\
+   Public Implementation
+\* ------------------------------------------------------------------------- */
 
 function load(clientId, apiKey, scope, discovery) {
   state.cid       = clientId;
@@ -55,19 +69,6 @@ function recognize() {
 
 function observe(cb) {
   obs.push(cb);
-}
-
-function user() {
-  return state.user;
-}
-
-function unobserve(cb) {
-  for(let i=0; i < obs.length; i++) {
-    if (obs[i] == cb) {
-      obs.splice(i,1);
-      break;
-    }
-  }
 }
 
 function button(parent_id, params = {}) {
@@ -88,11 +89,6 @@ function button(parent_id, params = {}) {
 
   function _render_btn() {
 
-    google.accounts.id.initialize({
-      client_id: state.cid,
-      callback: _on_response
-    });
-
     if (remove) unobserve(_render_btn);
     google.accounts.id.renderButton(
       ctr,
@@ -110,13 +106,20 @@ function button(parent_id, params = {}) {
 function onetap() {
   let remove = false;
 
+  function _handle_prompt_events(evt) {
+    if (evt.isNotDisplayed()) {
+      if (evt.getNotDisplayedReason() === 'suppressed_by_user') {
+        _disable();
+        _notify('onetap_suppressed');
+      }
+    }
+    if (evt.isSkippedMoment()) {
+      _notify('onetap_suppressed');
+    }
+  }
+
   function _set_autoflow() {
     if (remove) unobserve(_set_autoflow);
-    google.accounts.id.initialize({
-      client_id:   state.cid,
-      auto_select: true,
-      callback:    _on_response
-    });
     google.accounts.id.prompt(_handle_prompt_events); // also display the One Tap dialog */
   }
   if (google) _set_autoflow();
@@ -126,10 +129,13 @@ function onetap() {
   }
 }
 
-function _disable() {
-  state.user = null;
-  window.localStorage.removeItem(`gothic-id`);
-  google.accounts.id.disableAutoSelect();
+function unobserve(cb) {
+  for(let i=0; i < obs.length; i++) {
+    if (obs[i] == cb) {
+      obs.splice(i,1);
+      break;
+    }
+  }
 }
 
 function signout() {
@@ -144,31 +150,46 @@ function revoke() {
   });
 }
 
-async function _api_init() {
+function user() {
+  return state.user;
+}
+
+/* ------------------------------------------------------------------------- *\
+   Private Methods
+\* ------------------------------------------------------------------------- */
+
+/**
+ * Ensure that the module is cleared of all prior knowledge of user.
+ */
+function _disable() {
+  state.user = null;
+  window.localStorage.removeItem(`gothic-id`);
+  google.accounts.id.disableAutoSelect();
+}
+
+/** 
+ * Attempt to authorize the scopes required.
+ */
+function _authorize() {
   return new Promise((res,rej) => {
-    gapi.load('client', async () => {
-      await gapi.client.init({
-        apiKey: state.key,
-        discoveryDocs: [ state.discovery ],
-      });
-      res();
+    state.tok_client = google.accounts.oauth2.initTokenClient({
+      client_id: state.cid,
+      scope: state.scope,
+      hint: state.user.email,
+      callback: (response) => {
+        if (!response.access_token) {
+          return rej('authorization-failed');
+        }
+        res();
+      }
     });
+    state.tok_client.requestAccessToken({prompt: ''});
   });
 }
 
-async function _goog_setup() {
-  state.tok_client = google.accounts.oauth2.initTokenClient({
-    client_id: state.cid,
-    scope: state.scope,
-    hint: state.user.email,
-    callback: (response) => {
-      _notify('signin');
-    }
-  });
-  state.tok_client.requestAccessToken({prompt: ''});
-  return await _api_init();
-}
-
+/**
+ * Load, AND configure, Google's libraries.
+ */
 function _load_libaries() {
   
   let goog_ready = false;
@@ -191,12 +212,25 @@ function _load_libaries() {
 
   function _gapi_setup() {
     gapi = window.gapi;
-    gapi_ready = true;
-    _all_ready();
+    gapi.load('client', async() => {
+      await gapi.client.init({
+        apiKey: state.key,
+        discoveryDocs: [ state.discovery ],
+      });
+      gapi_ready = true;
+      _all_ready();
+    });
   }
 
   function _goog_ready() {
     google = window.google;
+    
+    google.accounts.id.initialize({
+      client_id: state.cid,
+      auto_select: true,
+      callback: _on_response
+    });
+    
     goog_ready = true;
     _all_ready();
   }
@@ -221,19 +255,6 @@ function _load_libaries() {
   return ready;
 }
 
-function _handle_prompt_events(event) {
-  if (event.isNotDisplayed()) {
-    if (event.getNotDisplayedReason() === 'suppressed_by_user') {
-      _disable();
-      window.localStorage.removeItem('gothic-id');
-      _notify('onetap_suppressed');
-    }
-  }
-  if (event.isSkippedMoment()) {
-    _notify('onetap_suppressed');
-  }
-}
-
 function _notify(type, user = null) {
   obs.forEach((fn) => { fn(type,user); });
 } 
@@ -246,17 +267,19 @@ async function _on_response(r) {
     try {
       let rawdata = jwt_decode(r.credential);
       state.user = (({ email, family_name, given_name, picture, name }) => ({ email, family_name, given_name, picture, name}))(rawdata);
-      await _goog_setup();
+      await _authorize();
       window.localStorage.setItem('gothic-id', 'loaded');
-      event_type = 'auth';
+      event_type = 'signin';
     } catch (err) {
-      event_type = 'error';
-      console.log(err);
+      if (err === 'auth-failed') {
+        event_type = 'auth-failed';
+      } else {
+        console.log(err);
+        event_type = 'error';
+      }
     }
   }
-  
-  if (event_type === 'signin') {
-    _notify(event_type, state.user);
-  }
+
+  _notify(event_type, state.user);
 }
 
