@@ -73,7 +73,6 @@ function observe(cb) {
 
 function button(parent_id, params = {}) {
 
-  let remove = false;
   const ctr = document.getElementById(parent_id);
   if (!ctr) {
     throw(new Error(`No container for signin button: '${parent_id}' `));
@@ -87,25 +86,13 @@ function button(parent_id, params = {}) {
     ...params,
   };
 
-  function _render_btn() {
-
-    if (remove) unobserve(_render_btn);
-    google.accounts.id.renderButton(
-      ctr,
-      options
-    ); 
-  }
-  
-  if (google) _render_btn();
-  else {
-    remove = true;
-    obs.push(_render_btn);
-  }
+  google.accounts.id.renderButton(
+    ctr,
+    options
+  ); 
 }
 
 function onetap() {
-  let remove = false;
-
   function _handle_prompt_events(evt) {
     if (evt.isNotDisplayed()) {
       if (evt.getNotDisplayedReason() === 'suppressed_by_user') {
@@ -118,15 +105,7 @@ function onetap() {
     }
   }
 
-  function _set_autoflow() {
-    if (remove) unobserve(_set_autoflow);
-    google.accounts.id.prompt(_handle_prompt_events); // also display the One Tap dialog */
-  }
-  if (google) _set_autoflow();
-  else {
-    remove = true;
-    obs.push(_set_autoflow);
-  }
+  google.accounts.id.prompt(_handle_prompt_events);
 }
 
 function unobserve(cb) {
