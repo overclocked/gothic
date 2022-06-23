@@ -209,6 +209,13 @@ main();
 - `user()`
   - This returns a lightweight user object with: `email`, `family_name`, `given_name`, `picture`, `name` properties. 
   
+## Bugs
+
+- None identified
+
+## ToDo
+
+- Add JWT validation
 
 
 
