@@ -20,6 +20,8 @@ Gothic is intended to make the easy things easy.
 You may find it doesn't serve your needs, but it may still serve as a reference
 point in writing your own implementation against Google's APIs.
 
+For a full walkthrough of how this is implemented, see (Seamless Integration with the Google Identity Service)[https://overclocked.medium.com/seamless-api-access-with-google-identity-services-b9901009a8ce].
+
 ## Dependencies
 
 Google now uses JWT's to encode user information. Gothic leverages the simple `jwt-decode` 
