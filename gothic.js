@@ -194,7 +194,7 @@ function _load_libaries() {
     gapi.load('client', async() => {
       await gapi.client.init({
         apiKey: state.key,
-        discoveryDocs: [ state.discovery ],
+        discoveryDocs: Array.isArray(state.discovery) ? state.discovery : [ state.discovery ],
       });
       gapi_ready = true;
       _all_ready();
