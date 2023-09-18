@@ -99,6 +99,9 @@ function onetap() {
         _disable();
         _notify('onetap_suppressed');
       }
+      if (evt.getNotDisplayedReason() === 'unknown_reason') {
+        _notify('onetap_failed'); // possibly 1password extension blocking onetap
+      }      
     }
     if (evt.isSkippedMoment()) {
       _notify('onetap_suppressed');
