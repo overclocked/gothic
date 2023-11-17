@@ -237,17 +237,18 @@ function _load_libaries() {
   return ready;
 }
 
-function _notify(type, user = null) {
-  obs.forEach((fn) => { fn(type,user); });
+function _notify(type, user = null, rawdata = null) {
+  obs.forEach((fn) => { fn(type,user,rawdata); });
 } 
 
 async function _on_response(r) {
 
   state.user = null;
   let event_type = 'unknown';
+  let rawdata = null;
   if (r && r.credential) {
     try {
-      let rawdata = jwt_decode(r.credential);
+      rawdata = jwt_decode(r.credential);
       state.user = (({ email, family_name, given_name, picture, name }) => ({ email, family_name, given_name, picture, name}))(rawdata);
       await _authorize();
       window.localStorage.setItem('gothic-id', 'loaded');
@@ -262,6 +263,6 @@ async function _on_response(r) {
     }
   }
 
-  _notify(event_type, state.user);
+  _notify(event_type, state.user, rawdata);
 }
 
