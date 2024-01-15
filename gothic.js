@@ -99,6 +99,9 @@ function onetap() {
         _disable();
         _notify('onetap_suppressed');
       }
+      if (evt.getNotDisplayedReason() === 'unknown_reason') {
+        _notify('onetap_failed'); // possibly 1password extension blocking onetap
+      }      
     }
     if (evt.isSkippedMoment()) {
       _notify('onetap_suppressed');
@@ -194,7 +197,7 @@ function _load_libaries() {
     gapi.load('client', async() => {
       await gapi.client.init({
         apiKey: state.key,
-        discoveryDocs: [ state.discovery ],
+        discoveryDocs: Array.isArray(state.discovery) ? state.discovery : [ state.discovery ],
       });
       gapi_ready = true;
       _all_ready();
@@ -234,18 +237,20 @@ function _load_libaries() {
   return ready;
 }
 
-function _notify(type, user = null) {
-  obs.forEach((fn) => { fn(type,user); });
+function _notify(type, user = null, token = null) {
+  obs.forEach((fn) => { fn(type,user,token); });
 } 
 
 async function _on_response(r) {
 
   state.user = null;
   let event_type = 'unknown';
+  let token = null;
   if (r && r.credential) {
     try {
-      let rawdata = jwt_decode(r.credential);
-      state.user = (({ email, family_name, given_name, picture, name }) => ({ email, family_name, given_name, picture, name}))(rawdata);
+      token = r.credential;
+      let rawdata = jwt_decode(token);
+      state.user = (({ email, family_name, given_name, picture, name, sub }) => ({ email, family_name, given_name, picture, name, sub }))(rawdata);
       await _authorize();
       window.localStorage.setItem('gothic-id', 'loaded');
       event_type = 'signin';
@@ -259,6 +264,6 @@ async function _on_response(r) {
     }
   }
 
-  _notify(event_type, state.user);
+  _notify(event_type, state.user, token);
 }
 
